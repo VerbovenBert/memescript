@@ -1,8 +1,8 @@
 const Command = require('command')
- 
+
 module.exports = function ProjectileExploit(dispatch) {
     const command = Command(dispatch)
-   
+
     let enabled = false
     let plyrs = false
     let targetAll = false
@@ -10,24 +10,24 @@ module.exports = function ProjectileExploit(dispatch) {
     let statesave = 0;
     let shiftpos = 0
     let cid = null
-   
+
     let packets = []
     let targets = []
     let players = {}
     let singleTarget = null;
     let timeout = null
-   
+
     let timerTick = 10
     let timerIterations = 100
     let lastJ = 0
     let single = false;
-   
+
     let curX = 0
     let curY = 0
     let curZ = 0
-   
+
     let statenames = ['free aiming', 'target all auto', 'singletarget auto']
-   
+
     command.add('pestat', () => {
         if (enabled) {
             command.message('PE Status: [enabled] ' + statenames[state])
@@ -35,54 +35,54 @@ module.exports = function ProjectileExploit(dispatch) {
             command.message('PE Status: [disabled] ' + statenames[state])
         }
     })
-   
-   
+
+
     command.add('pe', () => {
         enabled = !enabled
         single = false;
         command.message('Projectile exploit module '+(enabled?'enabled':'disabled')+'.')
     })
-   
+
     command.add('select', (t) => {
         command.message('Target '+t+' selected. ('+ getPidforName(t) + ')')
         statesave = state
         state = 0
         singleTarget = getPidforName(t)
     })
-   
+
     command.add('unselect', () => {
         command.message('Target ' + singleTarget + ' unselected.')
         state = statesave
     })
-   
+
     command.add('peall', () => {
         state = 1
         targets = []
         players = {}
         command.message('Targeting all targets' + (state == 1 ?'enabled':'disabled')+'.')
     })
-   
+
     command.add('peaim', () => {
         state = 2
         targets = []
         players = {}
         command.message('Targeting aimed targets.')
     })
-   
+
     command.add('shiftpos', (offset) => {
         shiftpos = parseFloat(offset)
         command.message('ShiftPos '+(shiftpos)+'.')
     })
-   
+
     command.add('pes', (newTick, newIterations) => {
         timerTick = parseInt(newTick)
         timerIterations = parseInt(newIterations)
         enabled = true
-        command.message(`Now rddepeating every ${timerTick} ms, ${timerIterations} times`)
+        command.message(`Now repeating every ${timerTick} ms, ${timerIterations} times`)
     })
-   
-   
-   
+
+
+
     command.add('playerlist', () => {
     var playerslist = '{'
         for (var key in players) {
@@ -91,11 +91,11 @@ module.exports = function ProjectileExploit(dispatch) {
         playerslist+='}'
         command.message('Players: ' + playerslist)
     })
-   
+
     dispatch.hook('S_LOGIN', 2, (event) => {
         cid = event.cid
     })
-   
+
     dispatch.hook('C_PLAYER_LOCATION', (event) => {
         curX = event.x1;
         curY = event.y1;
@@ -105,7 +105,7 @@ module.exports = function ProjectileExploit(dispatch) {
         event.z2 += shiftpos
         return true
     })
-   
+
     dispatch.hook('S_ACTION_STAGE', (event) => {
         if (shiftpos === 0) return
         if (event.source.toString() !== cid.toString()) return
@@ -114,7 +114,7 @@ module.exports = function ProjectileExploit(dispatch) {
         event.z = curZ
         return true
     })
-   
+
     dispatch.hook('S_ACTION_END', (event) => {
         if (shiftpos === 0) return
         if (event.source.toString() !== cid.toString()) return
@@ -123,22 +123,22 @@ module.exports = function ProjectileExploit(dispatch) {
         event.z = curZ
         return true
     })
-   
+
     dispatch.hook('S_SPAWN_NPC', (event) => {
         targets.push(event.id)
         console.log('NPC found: ' + event.id)
     })
-   
+
     dispatch.hook('S_SPAWN_USER',5 , (event) => {
         console.log('USER found: ' + event.name + ' id: ' + (event.cid));
         players[event.cid] = event.name
     })
-   
+
     dispatch.hook('S_DESPAWN_USER',2 , (event) => {
         console.log('USER removed: ' + players[event.target] + ' id: ' +  event.target);
         delete players[event.target]
     })
-   
+
     dispatch.hook('S_DESPAWN_NPC', (event) => {
         for (let i = 0; i < targets.length; i++) {
             if (targets[i].toString() === event.target.toString()) {
@@ -147,7 +147,7 @@ module.exports = function ProjectileExploit(dispatch) {
             }
         }
     })
-   
+
     function getPidforName(name) {
         for(var key in players) {
             if (players[key] === name) {
@@ -155,29 +155,29 @@ module.exports = function ProjectileExploit(dispatch) {
             }
         }
     }
-   
+
     function runTimer()
     {
         let i = 0
         let j = lastJ
         if (j >= packets.length) j = 0
-       
+
         while (i < timerIterations) {
             dispatch.toServer('C_HIT_USER_PROJECTILE', packets[j])
             i++
             j++
             if (j >= packets.length) j = 0
         }
-       
+
         lastJ = j
-       
+
         if (timeout !== null) {
             timeout = setTimeout(() => {
                 runTimer()
             }, timerTick)
         }
     }
-   
+
     function addPacket(event)
     {
         packets.push(event)
@@ -187,7 +187,7 @@ module.exports = function ProjectileExploit(dispatch) {
             }, timerTick)
         }
     }
-   
+
     function clearProjectile(projectileId)
     {
         for (let i = 0; i < packets.length; i++) {
@@ -196,7 +196,7 @@ module.exports = function ProjectileExploit(dispatch) {
                 i--;
             }
         }
-       
+
         if (packets.length === 0) {
             if (timeout !== null) {
                 clearTimeout(timeout)
@@ -204,7 +204,7 @@ module.exports = function ProjectileExploit(dispatch) {
             }
         }
     }
-   
+
     dispatch.hook('S_START_USER_PROJECTILE', (event) => {
         if (enabled) {
             if (event.source.toString() !== cid.toString()) return
@@ -267,22 +267,20 @@ module.exports = function ProjectileExploit(dispatch) {
                     }
                 }
         })
-   
+
     dispatch.hook('C_HIT_USER_PROJECTILE', (event) => {
         if (event.end !== 0) {
             clearProjectile(event.source)
             return
         }
-       
+
         if (!enabled) return
         addPacket(event)
-       
+
         return false
     })
-   
+
     dispatch.hook('S_END_USER_PROJECTILE', (event) => {
         clearProjectile(event.id)
     })
 }
-
-
